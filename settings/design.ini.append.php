@@ -2,5 +2,5 @@
  
 [ExtensionSettings]
 DesignExtensions[]=ezforgotpassword
-
  */
+?>
