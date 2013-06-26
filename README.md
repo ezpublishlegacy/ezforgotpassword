@@ -20,3 +20,6 @@ ActiveExtensions[]=ezforgotpassword`
 3. Go to *User accounts => Roles and policies* and click on Anonymous group.
 Now click "Edit" button and add "New policy". As a module select *ezforgotpassword*
 and as a function pick *generate*. Then click *Grant full access*.
+
+4. Now you need to include PHP class, so go to the root directory of your eZ installation and run:
+`php bin/php/ezpgenerateautoloads.php`
