@@ -5,9 +5,6 @@
  */
 class eZForgotPasswordGenerator
 {
-    const HMAC_KEY  = 'ThU9$wrarA';
-    const METHOD    = 'md5';
-
     private $user_email;
 
     /**
@@ -25,12 +22,13 @@ class eZForgotPasswordGenerator
      */
     private function generateHash()
     {
-        return hash_hmac( self::METHOD, $this->user_email . microtime(), self::HMAC_KEY );
+        $ini = eZINI::instance( 'ezforgotpassword.ini' );
+        return hash_hmac( 'md5', $this->user_email . microtime(), $ini->variable( 'MainSettings', 'Md5Key' ) );
     }
 
     /**
      * Send link operation, validates the email address and sends him an email message. Returns status.
-     * @return string
+     * @return string (WRONG_EMAIL|MESSAGE_NOT_SENT|MESSAGE_SENT)
      */
     public function sendLink()
     {
@@ -58,18 +56,20 @@ class eZForgotPasswordGenerator
                 
                 $tpl    = eZTemplate::factory();
                 $mail   = new eZMail();
+                $ini    = eZINI::instance( 'ezforgotpassword.ini' );
 
                 // render email template and send the message
                 $tpl->setVariable( 'link', 'ezforgotpassword/generate/' . $hash );
-                $mail->setSubject( ezpI18n::tr( 'ezforgotpassword/mail', 'Reset your password' ) );
+                $mail->setSubject( $ini->variable( 'MainSettings', 'EmailSubject' ) );
                 $mail->setContentType( 'text/html' );
                 $mail->setBody( $tpl->fetch( 'design:ezforgotpassword/mail/generate_link.tpl' ) );
                 $mail->addReceiver( $this->user_email );
 
-                $result = eZMailTransport::send( $mail );
-
-
-                $status = 'MESSAGE_SENT';
+                $status = 'MESSAGE_NOT_SENT';
+                if ( eZMailTransport::send( $mail ) )
+                {
+                    $status = 'MESSAGE_SENT';
+                }
             }
         }
 
