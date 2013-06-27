@@ -8,8 +8,21 @@ $status     = '';
 if ( $http->hasPostVariable( 'user_email' ) )
 {
     $user_email = $http->postVariable( 'user_email' );
-    $generator  = eZForgotPasswordGenerator::getInstanceByEmail( $user_email );
-    $status     = $generator->sendLink();
+    try
+    {
+        // try to create an object base on given email address
+        $generator = eZForgotPasswordGenerator::getInstanceByEmail( $user_email );
+    }
+    // exception is throwm when someting goes wrong
+    catch( Exception $e )
+    {
+        $status = 'WRONG_EMAIL';
+    }
+
+    if ( empty( $status ) )
+    {
+        $status = $generator->sendLink();
+    }
 }
 
 $tpl->setVariable( 'user_email', $user_email );

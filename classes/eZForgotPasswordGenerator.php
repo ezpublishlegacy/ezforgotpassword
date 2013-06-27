@@ -5,7 +5,7 @@
  */
 class eZForgotPasswordGenerator
 {
-    private static $user_email;
+    private static $user;
     private static $obj = null;
 
     /**
@@ -20,7 +20,7 @@ class eZForgotPasswordGenerator
     private function generateHash()
     {
         $ini = eZINI::instance( 'ezforgotpassword.ini' );
-        return hash_hmac( 'md5', self::$user_email . microtime(), $ini->variable( 'MainSettings', 'Md5Key' ) );
+        return hash_hmac( 'md5', self::$user->attribute( 'email' ) . microtime(), $ini->variable( 'MainSettings', 'Md5Key' ) );
     }
 
     /**
@@ -32,16 +32,26 @@ class eZForgotPasswordGenerator
     {
         if ( is_null( self::$obj ) )
         {
-            self::$obj = new self();
-            self::$user_email = $user_email;
+            self::$obj  = new self();
+            self::$user = eZUser::fetchByEmail( $user_email );
+
+            if ( filter_var( $user_email, FILTER_VALIDATE_EMAIL ) === false || is_null( self::$user ) )
+            {
+                throw new Exception( 'Incorrect email address.' );
+            }
         }
 
         return self::$obj;
     }
 
-    public static function getInstanceByHash()
+    public static function getInstanceByHash( $hash )
     {
-        
+        if ( is_null( self::$obj ) )
+        {
+            self::$obj = new self();
+        }
+
+        return self::$obj;
     }
 
     /**
@@ -50,45 +60,27 @@ class eZForgotPasswordGenerator
      */
     public function sendLink()
     {
-        $status = '';
+        $status = 'MESSAGE_NOT_SENT';
 
-        // given email address is not correct
-        if ( filter_var( self::$user_email, FILTER_VALIDATE_EMAIL ) === false )
+        // generate hash and store it in database
+        $hash = $this->generateHash();
+        $password_entry = eZForgotPassword::createNew( self::$user->id(), $hash, time() );
+        $password_entry->store();
+
+        $tpl    = eZTemplate::factory();
+        $mail   = new eZMail();
+        $ini    = eZINI::instance( 'ezforgotpassword.ini' );
+
+        // render email template and send the message
+        $tpl->setVariable( 'link', 'ezforgotpassword/generate/' . $hash );
+        $mail->setSubject( $ini->variable( 'MainSettings', 'EmailSubject' ) );
+        $mail->setContentType( 'text/html' );
+        $mail->setBody( $tpl->fetch( 'design:ezforgotpassword/mail/generate_link.tpl' ) );
+        $mail->addReceiver( self::$user->attribute( 'email' ) );
+
+        if ( eZMailTransport::send( $mail ) )
         {
-            $status = 'WRONG_EMAIL';
-        }
-        else
-        {
-            // check whether user with given email address exists
-            $user = eZUser::fetchByEmail( self::$user_email );
-            if ( is_null( $user ) )
-            {
-                $status = 'WRONG_EMAIL';
-            }
-            else
-            {
-                // generate hash and store it in database
-                $hash = $this->generateHash();
-                $password_entry = eZForgotPassword::createNew( $user->id(), $hash, time() );
-                $password_entry->store();
-                
-                $tpl    = eZTemplate::factory();
-                $mail   = new eZMail();
-                $ini    = eZINI::instance( 'ezforgotpassword.ini' );
-
-                // render email template and send the message
-                $tpl->setVariable( 'link', 'ezforgotpassword/generate/' . $hash );
-                $mail->setSubject( $ini->variable( 'MainSettings', 'EmailSubject' ) );
-                $mail->setContentType( 'text/html' );
-                $mail->setBody( $tpl->fetch( 'design:ezforgotpassword/mail/generate_link.tpl' ) );
-                $mail->addReceiver( self::$user_email );
-
-                $status = 'MESSAGE_NOT_SENT';
-                if ( eZMailTransport::send( $mail ) )
-                {
-                    $status = 'MESSAGE_SENT';
-                }
-            }
+            $status = 'MESSAGE_SENT';
         }
 
         return $status;
