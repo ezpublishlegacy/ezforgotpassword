@@ -8,6 +8,11 @@ class eZForgotPasswordGenerator
     private static $user;
     private static $obj = null;
 
+    // statuses for password generate operation
+    const PASSWORD_NOT_MATCH = 0;
+    const PASSWORD_CHANGED = 1;
+    const PASSWORD_TOO_SHORT = 2;
+
     /**
      * Blocked constructor - only for internal use
      */
@@ -24,9 +29,10 @@ class eZForgotPasswordGenerator
     }
 
     /**
-     * Sets the user_email for an object and returns the object
+     * Validates given email address and returns the object
      * @param string $user_email
      * @return eZForgotPasswordGenerator
+     * @throws Exception
      */
     public static function getInstanceByEmail( $user_email )
     {
@@ -44,11 +50,29 @@ class eZForgotPasswordGenerator
         return self::$obj;
     }
 
+    /**
+     * Checks whether given hash exists and returns the objecy
+     * @param string $hash
+     * @return eZForgotPasswordGenerator
+     * @throws Exception
+     */
     public static function getInstanceByHash( $hash )
     {
         if ( is_null( self::$obj ) )
         {
-            self::$obj = new self();
+            $password_entry = eZForgotPassword::fetchByKey( $hash );
+            if ( is_null( $password_entry ) )
+            {
+                throw new Exception( 'Incorrect hash code.' );
+            }
+
+            self::$obj  = new self();
+            self::$user = eZUser::fetch( $password_entry->attribute( 'user_id' ) );
+
+            if ( is_null( self::$user ) )
+            {
+                throw new Exception( 'User connected with hash code does not exist.' );
+            }
         }
 
         return self::$obj;
@@ -84,5 +108,29 @@ class eZForgotPasswordGenerator
         }
 
         return $status;
+    }
+
+    /**
+     * setting new password for the current user
+     * @param string $new_password
+     * @param string $repeat_password
+     * @return int
+     */
+    public function setNewPassword( $new_password, $repeat_password )
+    {
+        if ( $new_password !== $repeat_password )
+        {
+            return self::PASSWORD_NOT_MATCH;
+        }
+        elseif ( strlen( $new_password ) < eZINI::instance( 'site.ini' )->variable( 'UserSettings', 'MinPasswordLength' ) )
+        {
+            return self::PASSWORD_TOO_SHORT;
+        }
+
+
+        self::$user->setAttribute( 'password_hash', eZUser::createHash( self::$user->attribute( 'login' ), $new_password, eZUser::site(), eZUser::hashType() ) );
+        self::$user->store();
+
+        return self::PASSWORD_CHANGED;
     }
 }

@@ -10,3 +10,9 @@ $ViewList['mail'] = array(
     'script'    => 'mail.php',
     'functions' => array( 'generate' ),
 );
+
+$ViewList['generate'] = array(
+    'script'    => 'generate.php',
+    'functions' => array( 'generate' ),
+    'params'    => array( 'hash' ),
+);
