@@ -13,7 +13,7 @@ if ( empty( $hash ) )
 
 try
 {
-    $generator = eZForgotPasswordGenerator::getInstanceByHash( $hash );
+    $generator = new eZForgotPasswordGenerator( null, $hash );
 }
 catch( Exception $e )
 {

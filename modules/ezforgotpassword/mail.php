@@ -3,7 +3,9 @@
 $http       = eZHTTPTool::instance();
 $tpl        = eZTemplate::factory();
 $user_email = '';
-$status     = '';
+
+$correct_email  = true;
+$message_sent   = false;
 
 if ( $http->hasPostVariable( 'user_email' ) )
 {
@@ -11,22 +13,23 @@ if ( $http->hasPostVariable( 'user_email' ) )
     try
     {
         // try to create an object base on given email address
-        $generator = eZForgotPasswordGenerator::getInstanceByEmail( $user_email );
+        $generator = new eZForgotPasswordGenerator( $user_email );
     }
     // exception is throwm when someting goes wrong
     catch( Exception $e )
     {
-        $status = 'WRONG_EMAIL';
+        $correct_email = false;
     }
 
-    if ( empty( $status ) )
+    if ( $correct_email )
     {
-        $status = $generator->sendLink();
+        $message_sent = $generator->sendLink();
     }
 }
 
 $tpl->setVariable( 'user_email', $user_email );
-$tpl->setVariable( 'status', $status );
+$tpl->setVariable( 'correct_email', $correct_email );
+$tpl->setVariable( 'message_sent', $message_sent );
 
 $Result['content'] = $tpl->fetch( 'design:ezforgotpassword/mail.tpl' );
 $Result['path']    = array( array( 'text' => ezpI18n::tr( 'ezforgotpassword/mail', 'Forgot password' ) ) );

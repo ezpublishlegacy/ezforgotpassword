@@ -5,8 +5,7 @@
  */
 class eZForgotPasswordGenerator
 {
-    private static $user;
-    private static $obj = null;
+    private $user = null;
 
     // statuses for password generate operation
     const PASSWORD_NOT_MATCH = 0;
@@ -14,9 +13,27 @@ class eZForgotPasswordGenerator
     const PASSWORD_TOO_SHORT = 2;
 
     /**
-     * Blocked constructor - only for internal use
+     * Constructor needs to have at least one of the possible parameters - either email addres or hash code
+     * @param string|null $user_email
+     * @param string|null $hash
+     * @throws Exception
      */
-    private function __construct() {}
+    public function __construct( $user_email = null, $hash = null )
+    {
+        if ( !is_null( $user_email ) )
+        {
+            $this->user = $this->getUserByEmail( $user_email );
+        }
+        elseif( !is_null( $hash ) )
+        {
+            $this->user = $this->getUserByHash( $hash );
+        }
+
+        if ( is_null( $this->user ) )
+        {
+            throw new Exception( 'Please set the user object before using password generator class.' );
+        }
+    }
 
     /**
      * Method generates the hash value
@@ -25,57 +42,49 @@ class eZForgotPasswordGenerator
     private function generateHash()
     {
         $ini = eZINI::instance( 'ezforgotpassword.ini' );
-        return hash_hmac( 'md5', self::$user->attribute( 'email' ) . microtime(), $ini->variable( 'MainSettings', 'Md5Key' ) );
+        return hash_hmac( 'md5', $this->user->attribute( 'email' ) . microtime(), $ini->variable( 'MainSettings', 'Md5Key' ) );
     }
 
     /**
-     * Validates given email address and returns the object
+     * Validates given email address and returns the user object
      * @param string $user_email
-     * @return eZForgotPasswordGenerator
+     * @return eZUser
      * @throws Exception
      */
-    public static function getInstanceByEmail( $user_email )
+    private function getUserByEmail( $user_email )
     {
-        if ( is_null( self::$obj ) )
-        {
-            self::$obj  = new self();
-            self::$user = eZUser::fetchByEmail( $user_email );
+        $user = eZUser::fetchByEmail( $user_email );
 
-            if ( filter_var( $user_email, FILTER_VALIDATE_EMAIL ) === false || is_null( self::$user ) )
-            {
-                throw new Exception( 'Incorrect email address.' );
-            }
+        if ( filter_var( $user_email, FILTER_VALIDATE_EMAIL ) === false || is_null( $user ) )
+        {
+            throw new Exception( 'Incorrect email address.' );
         }
 
-        return self::$obj;
+        return $user;
     }
 
     /**
-     * Checks whether given hash exists and returns the objecy
+     * Checks whether given hash exists and returns the user object
      * @param string $hash
-     * @return eZForgotPasswordGenerator
+     * @return eZUser
      * @throws Exception
      */
-    public static function getInstanceByHash( $hash )
+    private function getUserByHash( $hash )
     {
-        if ( is_null( self::$obj ) )
+        $password_entry = eZForgotPassword::fetchByKey( $hash );
+        if ( is_null( $password_entry ) )
         {
-            $password_entry = eZForgotPassword::fetchByKey( $hash );
-            if ( is_null( $password_entry ) )
-            {
-                throw new Exception( 'Incorrect hash code.' );
-            }
-
-            self::$obj  = new self();
-            self::$user = eZUser::fetch( $password_entry->attribute( 'user_id' ) );
-
-            if ( is_null( self::$user ) )
-            {
-                throw new Exception( 'User connected with hash code does not exist.' );
-            }
+            throw new Exception( 'Incorrect hash code.' );
         }
 
-        return self::$obj;
+        $user = eZUser::fetch( $password_entry->attribute( 'user_id' ) );
+
+        if ( is_null( $user ) )
+        {
+            throw new Exception( 'User connected with hash code does not exist.' );
+        }
+
+        return $user;
     }
 
     /**
@@ -84,11 +93,11 @@ class eZForgotPasswordGenerator
      */
     public function sendLink()
     {
-        $status = 'MESSAGE_NOT_SENT';
+        $status = false;
 
         // generate hash and store it in database
         $hash = $this->generateHash();
-        $password_entry = eZForgotPassword::createNew( self::$user->id(), $hash, time() );
+        $password_entry = eZForgotPassword::createNew( $this->user->id(), $hash, time() );
         $password_entry->store();
 
         $tpl    = eZTemplate::factory();
@@ -100,11 +109,11 @@ class eZForgotPasswordGenerator
         $mail->setSubject( $ini->variable( 'MainSettings', 'EmailSubject' ) );
         $mail->setContentType( 'text/html' );
         $mail->setBody( $tpl->fetch( 'design:ezforgotpassword/mail/generate_link.tpl' ) );
-        $mail->addReceiver( self::$user->attribute( 'email' ) );
+        $mail->addReceiver( $this->user->attribute( 'email' ) );
 
         if ( eZMailTransport::send( $mail ) )
         {
-            $status = 'MESSAGE_SENT';
+            $status = true;
         }
 
         return $status;
@@ -127,9 +136,8 @@ class eZForgotPasswordGenerator
             return self::PASSWORD_TOO_SHORT;
         }
 
-
-        self::$user->setAttribute( 'password_hash', eZUser::createHash( self::$user->attribute( 'login' ), $new_password, eZUser::site(), eZUser::hashType() ) );
-        self::$user->store();
+        $this->user->setAttribute( 'password_hash', eZUser::createHash( $this->user->attribute( 'login' ), $new_password, eZUser::site(), eZUser::hashType() ) );
+        $this->user->store();
 
         return self::PASSWORD_CHANGED;
     }

@@ -1,21 +1,22 @@
 {* Template renders `mail` view of ezforgotpassword module.
 @param string $user_email
-@param string $status
+@param bool $correct_email
+@param bool $message_sent
 *}
 
 <div class="main-column">
     <div class="standard-form">
 
-        {if $status|eq( 'MESSAGE_SENT' )}
+        {if $message_sent}
             <p>
                 {"An email has been sent to the following address: %1. It contains a link you need to click to generate new password."|i18n( 'ezforgotpassword/mail', '', array( $user_email ) )}
             </p>
         {else}
-            {if $status|eq( 'WRONG_EMAIL' )}
+            {if not( $correct_email )}
                 <div class="warning">
                     <h2>{"There is no registered user with that email address."|i18n( 'ezforgotpassword/mail' )}</h2>
                 </div>
-            {elseif $status|eq( 'MESSAGE_NOT_SENT' )}
+            {elseif and( $user_email, not( $message_sent ) )}
                 <div class="warning">
                     <h2>{"An error ocurred when sending the email message. Please try again later."|i18n( 'ezforgotpassword/mail' )}</h2>
                 </div>
