@@ -9,6 +9,11 @@ class eZForgotPasswordGenerator
     private static $obj = null;
 
     /**
+     * Blocked constructor - only for internal use
+     */
+    private function __construct() {}
+
+    /**
      * Method generates the hash value
      * @return type
      */
