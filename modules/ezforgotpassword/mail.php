@@ -8,7 +8,7 @@ $status     = '';
 if ( $http->hasPostVariable( 'user_email' ) )
 {
     $user_email = $http->postVariable( 'user_email' );
-    $generator  = new eZForgotPasswordGenerator( $user_email );
+    $generator  = eZForgotPasswordGenerator::getInstanceByEmail( $user_email );
     $status     = $generator->sendLink();
 }
 

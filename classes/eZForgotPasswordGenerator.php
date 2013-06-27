@@ -5,16 +5,8 @@
  */
 class eZForgotPasswordGenerator
 {
-    private $user_email;
-
-    /**
-     * Constructor - needs an user email
-     * @param string $user_email
-     */
-    public function __construct( $user_email )
-    {
-        $this->user_email = $user_email;
-    }
+    private static $user_email;
+    private static $obj = null;
 
     /**
      * Method generates the hash value
@@ -23,7 +15,28 @@ class eZForgotPasswordGenerator
     private function generateHash()
     {
         $ini = eZINI::instance( 'ezforgotpassword.ini' );
-        return hash_hmac( 'md5', $this->user_email . microtime(), $ini->variable( 'MainSettings', 'Md5Key' ) );
+        return hash_hmac( 'md5', self::$user_email . microtime(), $ini->variable( 'MainSettings', 'Md5Key' ) );
+    }
+
+    /**
+     * Sets the user_email for an object and returns the object
+     * @param string $user_email
+     * @return eZForgotPasswordGenerator
+     */
+    public static function getInstanceByEmail( $user_email )
+    {
+        if ( is_null( self::$obj ) )
+        {
+            self::$obj = new self();
+            self::$user_email = $user_email;
+        }
+
+        return self::$obj;
+    }
+
+    public static function getInstanceByHash()
+    {
+        
     }
 
     /**
@@ -35,14 +48,14 @@ class eZForgotPasswordGenerator
         $status = '';
 
         // given email address is not correct
-        if ( filter_var( $this->user_email, FILTER_VALIDATE_EMAIL ) === false )
+        if ( filter_var( self::$user_email, FILTER_VALIDATE_EMAIL ) === false )
         {
             $status = 'WRONG_EMAIL';
         }
         else
         {
             // check whether user with given email address exists
-            $user = eZUser::fetchByEmail( $this->user_email );
+            $user = eZUser::fetchByEmail( self::$user_email );
             if ( is_null( $user ) )
             {
                 $status = 'WRONG_EMAIL';
@@ -63,7 +76,7 @@ class eZForgotPasswordGenerator
                 $mail->setSubject( $ini->variable( 'MainSettings', 'EmailSubject' ) );
                 $mail->setContentType( 'text/html' );
                 $mail->setBody( $tpl->fetch( 'design:ezforgotpassword/mail/generate_link.tpl' ) );
-                $mail->addReceiver( $this->user_email );
+                $mail->addReceiver( self::$user_email );
 
                 $status = 'MESSAGE_NOT_SENT';
                 if ( eZMailTransport::send( $mail ) )
