@@ -1,16 +1,22 @@
+{*
+@param string $hash
+@param bool $passwd_not_match
+@param bool $passwd_too_short
+@param bool $passwd_changed
+*}
 
 <div class="main-column">
     <div class="standard-form">
-        {if $status|eq( '1' )}
+        {if $passwd_changed}
             <p>
                 {'Password successfully changed.'|i18n( 'ezforgotpassword/generate' )}
             </p>
         {else}
-            {if $status|eq( '0' )}
+            {if $passwd_not_match}
                 <div class="warning">
                     <h2>{'Given passwords do not match. Please re-type and try again.'|i18n( 'ezforgotpassword/generate' )}</h2>
                 </div>
-            {elseif $status|eq( '2' )}
+            {elseif $passwd_too_short}
                 <div class="warning">
                     <h2>{'The password must be at least %1 characters long.'|i18n( 'ezforgotpassword/generate', '', array( ezini( 'UserSettings','MinPasswordLength', 'site.ini' ) ) )}</h2>
                 </div>

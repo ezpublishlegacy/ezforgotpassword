@@ -53,11 +53,15 @@ class eZForgotPasswordGenerator
      */
     private function getUserByEmail( $user_email )
     {
-        $user = eZUser::fetchByEmail( $user_email );
-
-        if ( filter_var( $user_email, FILTER_VALIDATE_EMAIL ) === false || is_null( $user ) )
+        if ( filter_var( $user_email, FILTER_VALIDATE_EMAIL ) === false )
         {
             throw new Exception( 'Incorrect email address.' );
+        }
+
+        $user = eZUser::fetchByEmail( $user_email );
+        if ( is_null( $user ) )
+        {
+            throw new Exception( 'There is no user with given email address.' );
         }
 
         return $user;
@@ -137,7 +141,16 @@ class eZForgotPasswordGenerator
 
         $this->user->setAttribute( 'password_hash', eZUser::createHash( $this->user->attribute( 'login' ), $new_password, eZUser::site(), eZUser::hashType() ) );
         $this->user->store();
+        $this->removeHash();
 
         return self::PASSWORD_CHANGED;
+    }
+
+    /**
+     * Method removes all hashes that belongs to current user
+     */
+    private function removeHash()
+    {
+        eZForgotPassword::removeByUserID( $this->user->id() );
     }
 }
