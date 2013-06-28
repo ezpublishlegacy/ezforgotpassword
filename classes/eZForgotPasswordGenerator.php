@@ -31,7 +31,7 @@ class eZForgotPasswordGenerator
 
         if ( is_null( $this->user ) )
         {
-            throw new Exception( 'Please set the user object before using password generator class.' );
+            throw new eZForgotPasswordMissingInputException( 'Please set the user object before using password generator class.' );
         }
     }
 
