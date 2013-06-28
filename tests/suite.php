@@ -9,7 +9,7 @@ class ezForgotPasswordTestSuite extends ezpDatabaseTestSuite
         $this->setName( "eZForgotPassword extension test suite" );
 
         // Adding tests
-        $this->addTestSuite( 'testMissingInput' );
+        $this->addTestSuite( 'ezForgotPasswordTest' );
     }
 
     public static function suite()

@@ -31,7 +31,7 @@ class eZForgotPasswordGenerator
 
         if ( is_null( $this->user ) )
         {
-            throw new eZForgotPasswordMissingInputException( 'Please set the user object before using password generator class.' );
+            throw new eZFPMissingInputException( 'Please set the user object before using password generator class.' );
         }
     }
 
@@ -55,7 +55,7 @@ class eZForgotPasswordGenerator
     {
         if ( filter_var( $user_email, FILTER_VALIDATE_EMAIL ) === false )
         {
-            throw new Exception( 'Incorrect email address.' );
+            throw new eZFPIncorrectEmailException( 'Incorrect email address.' );
         }
 
         $user = eZUser::fetchByEmail( $user_email );

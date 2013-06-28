@@ -1,3 +1,4 @@
 <?php
 
-class eZForgotPasswordMissingInputException extends Exception {}
+class eZFPMissingInputException extends Exception {}
+class eZFPIncorrectEmailException extends Exception {}
