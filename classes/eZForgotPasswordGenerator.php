@@ -78,14 +78,14 @@ class eZForgotPasswordGenerator
         $password_entry = eZForgotPassword::fetchByKey( $hash );
         if ( is_null( $password_entry ) )
         {
-            throw new Exception( 'Incorrect hash code.' );
+            throw new eZFPIncorrectHashException( 'Incorrect hash code.' );
         }
 
         $user = eZUser::fetch( $password_entry->attribute( 'user_id' ) );
 
         if ( is_null( $user ) )
         {
-            throw new Exception( 'User connected with hash code does not exist.' );
+            throw new eZFPMissingHashUserException( 'User connected with hash code does not exist.' );
         }
 
         return $user;

@@ -2,7 +2,7 @@
 
 // eZForgotPassword extension tests
 
-// Run with: > php tests/runtests.php --dsn mysqli://root:root@localhost/eztests --filter="eZForgotPasswordTest" --db-per-test
+// Run with: > php tests/runtests.php --dsn mysqli://root:password@localhost/eztests --filter="ezForgotPasswordTest" --db-per-test
 // (assumes the database 'eztests' have been created)
 
 class ezForgotPasswordTest extends ezpDatabaseTestCase
@@ -69,5 +69,27 @@ class ezForgotPasswordTest extends ezpDatabaseTestCase
         $user->store();
 
         $this->assertInstanceOf( 'eZForgotPasswordGenerator', new eZForgotPasswordGenerator( self::CORRECT_EMAIL ) );
+    }
+
+    /**
+     * @expectedException eZFPIncorrectHashException
+     */
+    public function testIncorrectHash()
+    {
+        $hash = 'not-existing-hash-code';
+        new eZForgotPasswordGenerator( null, $hash );
+    }
+
+    /**
+     * @expectedException eZFPMissingHashUserException
+     */
+    public function testHashUserDoesntExist()
+    {
+        $hash           = md5( time() );
+        $dummy_user_id  = 10000;
+        $password_entry = eZForgotPassword::createNew( $dummy_user_id, $hash, time() );
+
+        $password_entry->store();
+        new eZForgotPasswordGenerator( null, $hash );
     }
 }
