@@ -61,7 +61,7 @@ class eZForgotPasswordGenerator
         $user = eZUser::fetchByEmail( $user_email );
         if ( is_null( $user ) )
         {
-            throw new Exception( 'There is no user with given email address.' );
+            throw new eZFPNotExistingEmailException( 'There is no user with given email address.' );
         }
 
         return $user;
