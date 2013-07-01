@@ -21,6 +21,22 @@ class ezForgotPasswordTest extends ezpDatabaseTestCase
     }
 
     /**
+     * Helper method
+     * @return \eZUser
+     */
+    private function createNewUser()
+    {
+        $user = new eZUser( array(
+            'login'                 => self::CORRECT_EMAIL,
+            'email'                 => self::CORRECT_EMAIL,
+            'password_hash'         => eZUser::createHash( self::CORRECT_EMAIL, 'test', eZUser::site(), eZUser::hashType() ),
+            'password_hash_type'    => eZUser::hashType()
+        ) );
+        $user->store();
+        return $user;
+    }
+
+    /**
      * @expectedException eZFPMissingInputException
      */
     public function testMissingInput()
@@ -60,14 +76,7 @@ class ezForgotPasswordTest extends ezpDatabaseTestCase
 
     public function testCorectExistingEmailAddress()
     {
-        $user = new eZUser( array(
-            'login'                 => self::CORRECT_EMAIL,
-            'email'                 => self::CORRECT_EMAIL,
-            'password_hash'         => eZUser::createHash( self::CORRECT_EMAIL, 'test', eZUser::site(), eZUser::hashType() ),
-            'password_hash_type'    => eZUser::hashType()
-        ) );
-        $user->store();
-
+        $this->createNewUser();
         $this->assertInstanceOf( 'eZForgotPasswordGenerator', new eZForgotPasswordGenerator( self::CORRECT_EMAIL ) );
     }
 
@@ -91,5 +100,29 @@ class ezForgotPasswordTest extends ezpDatabaseTestCase
 
         $password_entry->store();
         new eZForgotPasswordGenerator( null, $hash );
+    }
+
+    public function testPasswordsNotMatch()
+    {
+        $user       = $this->createNewUser();
+        $generator  = new eZForgotPasswordGenerator( $user->attribute( 'email' ) );
+
+        $this->assertEquals( $generator->setNewPassword( 'pass1', 'pass2' ), eZForgotPasswordGenerator::PASSWORD_NOT_MATCH );
+    }
+
+    public function testPasswordTooshort()
+    {
+        $user       = $this->createNewUser();
+        $generator  = new eZForgotPasswordGenerator( $user->attribute( 'email' ) );
+
+        $this->assertEquals( $generator->setNewPassword( '', '' ), eZForgotPasswordGenerator::PASSWORD_TOO_SHORT );
+    }
+
+    public function testPasswordChanged()
+    {
+        $user       = $this->createNewUser();
+        $generator  = new eZForgotPasswordGenerator( $user->attribute( 'email' ) );
+
+        $this->assertEquals( $generator->setNewPassword( 'pass', 'pass' ), eZForgotPasswordGenerator::PASSWORD_CHANGED );
     }
 }
