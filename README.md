@@ -23,3 +23,8 @@ and as a function pick *generate*. Then click *Grant full access*.
 
 4. Now you need to include PHP class, so go to the root directory of your eZ installation and run:
 `php bin/php/ezpgenerateautoloads.php`
+
+Usage
+-----
+Plugin provides a link to generator, which can be generated in templates by:
+`{'ezforgotpassword/mail'|ezurl()}`
