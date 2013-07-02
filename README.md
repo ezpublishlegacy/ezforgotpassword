@@ -14,8 +14,8 @@ Installation
 `git clone git@github.com:makingwaves/ezforgotpassword.git`
 
 2. Enable extension adding entry to site.ini.append.php:
-`[ExtensionSettings]
-ActiveExtensions[]=ezforgotpassword`
+`[ExtensionSettings]`
+`ActiveExtensions[]=ezforgotpassword`
 
 3. Go to *User accounts => Roles and policies* and click on Anonymous group.
 Now click "Edit" button and add "New policy". As a module select *ezforgotpassword*
