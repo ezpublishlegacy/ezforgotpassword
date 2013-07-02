@@ -20,6 +20,12 @@ class ezForgotPasswordTest extends ezpDatabaseTestCase
         parent::setUp();
     }
 
+    public function tearDown()
+    {
+        ezpINIHelper::restoreINISettings();
+        parent::tearDown();
+    }
+
     /**
      * Helper method
      * @return \eZUser
@@ -124,5 +130,14 @@ class ezForgotPasswordTest extends ezpDatabaseTestCase
         $generator  = new eZForgotPasswordGenerator( $user->attribute( 'email' ) );
 
         $this->assertEquals( $generator->setNewPassword( 'pass', 'pass' ), eZForgotPasswordGenerator::PASSWORD_CHANGED );
+    }
+
+    public function testSendEmail()
+    {
+        $user       = $this->createNewUser();
+        $generator  = new eZForgotPasswordGenerator( $user->attribute( 'email' ) );
+
+        ezpINIHelper::setINISetting( 'site.ini', 'MailSettings', 'Transport', 'file' );
+        $this->assertEquals( true, $generator->sendLink() );
     }
 }
