@@ -1,4 +1,4 @@
-ezforgotpassword 1.0.0
+ezforgotpassword 1.0.1
 ======================
 
 Description
