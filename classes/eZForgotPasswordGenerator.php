@@ -44,6 +44,31 @@ class eZForgotPasswordGenerator
         $ini = eZINI::instance( 'ezforgotpassword.ini' );
         return hash_hmac( 'md5', $this->user->attribute( 'email' ) . microtime(), $ini->variable( 'MainSettings', 'Md5Key' ) );
     }
+    
+    /**
+     * Method iterates through senders list and returns first possible sender string
+     * @return string
+     */
+    private function getEmailSender()
+    {
+        $senders_list = array(
+            eZINI::instance( 'ezforgotpassword.ini' )->variable( 'MainSettings', 'EmailSender' ),
+            eZINI::instance( 'site.ini' )->variable( 'MailSettings', 'EmailSender' ),
+            eZINI::instance( 'site.ini' )->variable( 'MailSettings', 'AdminEmail' )
+        );
+        
+        $email_sender = '';
+        foreach ( $senders_list as $sender )
+        {
+            if ( $sender )
+            {
+                $email_sender = $sender;
+                break;
+            }
+        }
+        
+        return $email_sender;
+    }
 
     /**
      * Validates given email address and returns the user object
@@ -106,9 +131,15 @@ class eZForgotPasswordGenerator
 
         $tpl    = eZTemplate::factory();
         $mail   = new eZMail();
-
-        // render email template and send the message
+        
+        // set template variables
         $tpl->setVariable( 'link', 'ezforgotpassword/generate/' . $hash );
+        $tpl->setVariable( 'username', $this->user->attribute('login') );
+        
+        // set email sender
+        $mail->setSender( $this->getEmailSender() );        
+        
+        // render email template and send the message
         $mail->setContentType( 'text/html' );
         $mail->setBody( $tpl->fetch( 'design:ezforgotpassword/mail/generate_link.tpl' ) );
         $mail->addReceiver( $this->user->attribute( 'email' ) );
